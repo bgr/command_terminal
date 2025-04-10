@@ -27,7 +27,7 @@ namespace CommandTerminal
         [SerializeField]
         float ToggleSpeed = 360;
 
-        [SerializeField] public KeyCode[] ToggleHotkeys = new KeyCode[] { KeyCode.BackQuote };
+        [SerializeField] public TerminalKeyboardInputProvider inputProvider;
         [SerializeField] internal int BufferSize           = 512;
 
         [Header("Input")]
@@ -124,6 +124,8 @@ namespace CommandTerminal
             }
 
             state = new_state;
+            // You can use this to disable player inputs while console is open, if not using the old input system.
+            inputProvider.SetTerminalOpen(state != TerminalState.Close);
         }
 
         public void ToggleState(TerminalState new_state) {
@@ -147,10 +149,6 @@ namespace CommandTerminal
 
             command_text = "";
             cached_command_text = command_text;
-            foreach (var toggleHotkey in ToggleHotkeys)
-            {
-                Assert.AreNotEqual(toggleHotkey, KeyCode.Return, "Return is not a valid ToggleHotkey");
-            }
 
             SetupWindow();
             SetupInput();
@@ -273,15 +271,13 @@ namespace CommandTerminal
                 move_cursor = true; // Wait till next draw call
             } else if (Event.current.type == EventType.KeyDown && Event.current.character != '\t') {
                 if (!Event.current.shift) last_input_was_tab = false;  // allow shift-tab to cycle completions backwards
-                foreach (var toggleHotKey in ToggleHotkeys) {
-                    if (Event.current.keyCode == toggleHotKey) {
-                        if (Event.current.shift) {
-                            ToggleState(TerminalState.OpenFull);
-                        } else {
-                            ToggleState(TerminalState.OpenSmall);
-                        }
 
-                        break;
+                if (inputProvider.GetButtonDown())
+                {
+                    if (Event.current.shift) {
+                        ToggleState(TerminalState.OpenFull);
+                    } else {
+                        ToggleState(TerminalState.OpenSmall);
                     }
                 }
             }
